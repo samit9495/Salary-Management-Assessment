@@ -66,3 +66,22 @@ class TestListEmployeesAPI:
         assert response.status_code == 200
         names = [row["full_name"] for row in response.json()]
         assert names == ["A", "B"]
+
+    def test_list_employees_paginates_with_limit_and_offset(self, client: TestClient) -> None:
+        for name in ["A", "B", "C", "D"]:
+            client.post("/employees", json=_valid_payload(full_name=name))
+
+        page = client.get("/employees", params={"limit": 2, "offset": 1}).json()
+
+        assert [row["full_name"] for row in page] == ["B", "C"]
+
+    def test_list_employees_rejects_limit_over_max(self, client: TestClient) -> None:
+        response = client.get("/employees", params={"limit": 501})
+        assert response.status_code == 422
+
+    def test_list_employees_defaults_limit_to_50(self, client: TestClient) -> None:
+        for i in range(55):
+            client.post("/employees", json=_valid_payload(full_name=f"N{i:02d}"))
+
+        page = client.get("/employees").json()
+        assert len(page) == 50
