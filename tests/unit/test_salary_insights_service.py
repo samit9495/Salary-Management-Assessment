@@ -35,3 +35,20 @@ class TestAverageSalaryByCountry:
 
         service = SalaryInsightsService(db)
         assert service.average_salary_by_country("IN") == Decimal("500.00")
+
+
+class TestMinMaxSalaryByCountry:
+    def test_min_max_return_zero_zero_when_no_employees(self, db: Session) -> None:
+        service = SalaryInsightsService(db)
+        assert service.min_max_salary_by_country("IN") == (Decimal("0.00"), Decimal("0.00"))
+
+    def test_min_max_returns_bounds(self, db: Session) -> None:
+        for amount in (Decimal("100"), Decimal("500"), Decimal("250")):
+            db.add(Employee(full_name="X", job_title="E", country="IN", salary=amount))
+        db.commit()
+
+        service = SalaryInsightsService(db)
+        assert service.min_max_salary_by_country("IN") == (
+            Decimal("100.00"),
+            Decimal("500.00"),
+        )
