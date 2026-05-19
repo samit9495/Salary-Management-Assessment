@@ -113,3 +113,19 @@ class TestUpdateEmployeeAPI:
     def test_put_missing_employee_returns_404(self, client: TestClient) -> None:
         response = client.put("/employees/9999", json={"job_title": "X"})
         assert response.status_code == 404
+
+
+class TestDeleteEmployeeAPI:
+    def test_delete_employee_returns_204_and_removes_row(self, client: TestClient) -> None:
+        created = client.post("/employees", json=_valid_payload()).json()
+
+        response = client.delete(f"/employees/{created['id']}")
+        assert response.status_code == 204
+        assert response.content == b""
+
+        follow_up = client.get(f"/employees/{created['id']}")
+        assert follow_up.status_code == 404
+
+    def test_delete_missing_employee_returns_404(self, client: TestClient) -> None:
+        response = client.delete("/employees/9999")
+        assert response.status_code == 404
