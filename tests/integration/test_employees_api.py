@@ -139,3 +139,17 @@ class TestDuplicateEmail:
 
         assert response.status_code == 409
         assert response.json()["code"] == "duplicate_email"
+
+
+class TestOptionalProfileFields:
+    def test_create_defaults_is_active_to_true(self, client: TestClient) -> None:
+        body = client.post("/employees", json=_valid_payload()).json()
+        assert body["is_active"] is True
+
+    def test_create_persists_department_and_hire_date(self, client: TestClient) -> None:
+        payload = _valid_payload(department="Platform", hire_date="2024-01-15")
+
+        body = client.post("/employees", json=payload).json()
+
+        assert body["department"] == "Platform"
+        assert body["hire_date"] == "2024-01-15"
