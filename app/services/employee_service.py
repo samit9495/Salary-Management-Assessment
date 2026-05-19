@@ -1,3 +1,4 @@
+import hashlib
 import logging
 
 from sqlalchemy.exc import IntegrityError
@@ -9,6 +10,15 @@ from app.repositories.employee_repository import EmployeeRepository
 from app.schemas.employee import EmployeeCreate, EmployeeUpdate
 
 logger = logging.getLogger(__name__)
+
+
+def _hash_email(email: str) -> str:
+    """Return an 8-char SHA256 prefix of the email address.
+
+    Used to log a stable identifier for a duplicate-email collision
+    without putting raw PII in the log stream.
+    """
+    return hashlib.sha256(email.encode("utf-8")).hexdigest()[:8]
 
 
 class EmployeeService:
@@ -29,6 +39,13 @@ class EmployeeService:
         except IntegrityError as exc:
             self.db.rollback()
             if payload.email is not None and "email" in str(exc.orig).lower():
+                logger.warning(
+                    "duplicate_email",
+                    extra={
+                        "event": "duplicate_email",
+                        "email_hash": _hash_email(payload.email),
+                    },
+                )
                 raise DuplicateEmployeeEmail(payload.email) from exc
             raise
         self.db.refresh(employee)
