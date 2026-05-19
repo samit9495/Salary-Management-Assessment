@@ -216,3 +216,27 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# macOS
+.DS_Store
+**/.DS_Store
+
+# Editor / IDE
+.idea/
+*.iml
+
+# SQLite (project DB)
+*.db
+*.sqlite
+*.sqlite3-journal
+salary.db
+
+# Frontend (Vite / Node)
+node_modules/
+frontend/node_modules/
+frontend/dist/
+frontend/coverage/
+.vite/
+*.tsbuildinfo
+
+.cursor/mcp.json
