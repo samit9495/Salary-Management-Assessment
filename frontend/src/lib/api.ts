@@ -1,3 +1,5 @@
+import { logger } from "./logger";
+
 export class ApiError extends Error {
   readonly status: number;
   readonly code?: string;
@@ -15,10 +17,11 @@ const BASE_URL = import.meta.env.VITE_API_URL ?? "http://localhost:8000";
 type ApiInit = Omit<RequestInit, "body"> & { body?: unknown };
 
 export async function apiFetch<T>(path: string, init: ApiInit = {}): Promise<T> {
-  const { body, headers, ...rest } = init;
+  const { body, headers, method, ...rest } = init;
 
   const response = await fetch(`${BASE_URL}${path}`, {
     ...rest,
+    method,
     headers: {
       "Content-Type": "application/json",
       Accept: "application/json",
@@ -37,6 +40,12 @@ export async function apiFetch<T>(path: string, init: ApiInit = {}): Promise<T> 
     } catch {
       // body wasn't JSON; keep statusText
     }
+    logger.warn("api_error", {
+      method: method ?? "GET",
+      path,
+      status: response.status,
+      requestId: response.headers.get("X-Request-ID") ?? undefined,
+    });
     throw new ApiError(response.status, detail, code);
   }
 
