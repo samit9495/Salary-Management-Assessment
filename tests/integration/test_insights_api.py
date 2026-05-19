@@ -71,3 +71,40 @@ class TestTopTitlesEndpoint:
                 {"title": "Manager", "count": 2},
             ]
         }
+
+
+class TestGlobalOverviewEndpoint:
+    def test_empty_db_returns_zero_overview(self, client: TestClient) -> None:
+        body = client.get("/insights/overview").json()
+        assert body == {
+            "total_employees": 0,
+            "average_salary": "0.00",
+            "active_countries": 0,
+            "active_titles": 0,
+        }
+
+    def test_aggregates_across_countries(self, client: TestClient) -> None:
+        _post(client, country="IN", job_title="Engineer", salary="100")
+        _post(client, country="US", job_title="Manager", salary="500")
+
+        body = client.get("/insights/overview").json()
+        assert body["total_employees"] == 2
+        assert body["average_salary"] == "300.00"
+        assert body["active_countries"] == 2
+
+
+class TestRecentAndDistribution:
+    def test_recent_returns_last_n_by_id_desc(self, client: TestClient) -> None:
+        for name in ("A", "B", "C"):
+            _post(client, full_name=name)
+
+        body = client.get("/insights/recent", params={"limit": 2}).json()
+        assert [row["full_name"] for row in body] == ["C", "B"]
+
+    def test_distribution_returns_counts_per_country(self, client: TestClient) -> None:
+        _post(client, country="IN")
+        _post(client, country="IN")
+        _post(client, country="US")
+
+        body = client.get("/insights/distribution").json()
+        assert body == {"counts": {"IN": 2, "US": 1}}
