@@ -52,3 +52,14 @@ export type TitleCount = {
 export type TopTitles = {
   titles: TitleCount[];
 };
+
+export type GlobalOverview = {
+  total_employees: number;
+  average_salary: string;
+  active_countries: number;
+  active_titles: number;
+};
+
+export type CountryDistribution = {
+  counts: Record<string, number>;
+};

@@ -24,3 +24,24 @@ export function useTopTitles(limit = 10) {
     queryFn: () => insightsApi.topTitles(limit),
   });
 }
+
+export function useGlobalOverview() {
+  return useQuery({
+    queryKey: ["insights", "overview"],
+    queryFn: () => insightsApi.overview(),
+  });
+}
+
+export function useRecentEmployees(limit = 5) {
+  return useQuery({
+    queryKey: ["insights", "recent", limit],
+    queryFn: () => insightsApi.recent(limit),
+  });
+}
+
+export function useCountryDistribution() {
+  return useQuery({
+    queryKey: ["insights", "distribution"],
+    queryFn: () => insightsApi.distribution(),
+  });
+}
