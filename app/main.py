@@ -26,7 +26,16 @@ async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
 
 def register_exception_handlers(app: FastAPI) -> None:
     @app.exception_handler(DomainError)
-    async def _domain_error_handler(_request: Request, exc: DomainError) -> JSONResponse:
+    async def _domain_error_handler(request: Request, exc: DomainError) -> JSONResponse:
+        logger.warning(
+            "domain_error",
+            extra={
+                "code": exc.code,
+                "status_code": exc.status_code,
+                "method": request.method,
+                "path": request.url.path,
+            },
+        )
         return JSONResponse(
             status_code=exc.status_code,
             content={"detail": exc.message, "code": exc.code},
