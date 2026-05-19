@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
-from app.api.routes import employees
+from app.api.routes import employees, insights
 from app.core.config import get_settings
 from app.core.exceptions import DomainError
 from app.db.session import engine, init_db
@@ -37,6 +37,7 @@ app.add_middleware(
 register_exception_handlers(app)
 
 app.include_router(employees.router)
+app.include_router(insights.router)
 
 
 @app.get("/")

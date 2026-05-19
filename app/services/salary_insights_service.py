@@ -53,3 +53,10 @@ class SalaryInsightsService:
             .limit(limit)
         ).all()
         return [(title, int(count)) for title, count in rows]
+
+    def employee_count_by_country(self, country: str) -> int:
+        return int(
+            self.db.execute(
+                select(func.count(Employee.id)).where(Employee.country == country)
+            ).scalar_one()
+        )
