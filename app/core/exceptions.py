@@ -21,3 +21,12 @@ class EmployeeNotFound(DomainError):
     def __init__(self, employee_id: int) -> None:
         super().__init__(f"Employee with id {employee_id} not found")
         self.employee_id = employee_id
+
+
+class DuplicateEmployeeEmail(DomainError):
+    status_code = 409
+    code = "duplicate_email"
+
+    def __init__(self, email: str) -> None:
+        super().__init__(f"Employee with email {email!r} already exists")
+        self.email = email

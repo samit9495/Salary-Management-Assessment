@@ -1,6 +1,7 @@
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
-from app.core.exceptions import EmployeeNotFound
+from app.core.exceptions import DuplicateEmployeeEmail, EmployeeNotFound
 from app.models.employee import Employee
 from app.repositories.employee_repository import EmployeeRepository
 from app.schemas.employee import EmployeeCreate, EmployeeUpdate
@@ -18,8 +19,14 @@ class EmployeeService:
 
     def create(self, payload: EmployeeCreate) -> Employee:
         employee = Employee(**payload.model_dump())
-        self.repo.add(employee)
-        self.db.commit()
+        try:
+            self.repo.add(employee)
+            self.db.commit()
+        except IntegrityError as exc:
+            self.db.rollback()
+            if payload.email is not None and "email" in str(exc.orig).lower():
+                raise DuplicateEmployeeEmail(payload.email) from exc
+            raise
         self.db.refresh(employee)
         return employee
 

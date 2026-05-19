@@ -8,6 +8,7 @@ class EmployeeBase(BaseModel):
     job_title: str = Field(min_length=1, max_length=100, examples=["Engineer"])
     country: str = Field(min_length=2, max_length=2, examples=["IN"])
     salary: Decimal = Field(ge=0, max_digits=12, decimal_places=2, examples=["50000.00"])
+    email: str | None = Field(default=None, max_length=254, examples=["jane@example.com"])
 
 
 class EmployeeCreate(EmployeeBase):
@@ -21,6 +22,7 @@ class EmployeeUpdate(BaseModel):
     job_title: str | None = Field(default=None, min_length=1, max_length=100)
     country: str | None = Field(default=None, min_length=2, max_length=2)
     salary: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
+    email: str | None = Field(default=None, max_length=254)
 
 
 class EmployeeRead(EmployeeBase):
