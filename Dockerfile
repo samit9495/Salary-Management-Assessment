@@ -23,7 +23,9 @@ RUN pip install --upgrade pip \
 # /data is the mounted Fly volume; SQLite file lives there
 ENV DATABASE_URL=sqlite:////data/app.db \
     ALLOWED_ORIGINS=http://localhost:5173 \
-    PORT=8080
+    PORT=8080 \
+    LOG_LEVEL=INFO \
+    LOG_SQL=false
 
 VOLUME ["/data"]
 
@@ -32,4 +34,8 @@ EXPOSE 8080
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
   CMD curl -fsS http://localhost:${PORT:-8080}/ || exit 1
 
-CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080}"]
+# `--no-access-log` disables uvicorn's built-in per-request line so we
+# don't double-log; our RequestContextMiddleware emits a structured JSON
+# line for every request with method, path, status, duration_ms, and
+# request_id.
+CMD ["sh", "-c", "uvicorn app.main:app --host 0.0.0.0 --port ${PORT:-8080} --no-access-log"]
