@@ -35,3 +35,12 @@ class TestCreateEmployeeAPI:
     def test_post_employees_with_blank_full_name_returns_422(self, client: TestClient) -> None:
         response = client.post("/employees", json=_valid_payload(full_name=""))
         assert response.status_code == 422
+
+
+class TestGetEmployeeAPI:
+    def test_get_employee_by_id_returns_200_with_row(self, client: TestClient) -> None:
+        created = client.post("/employees", json=_valid_payload()).json()
+
+        response = client.get(f"/employees/{created['id']}")
+        assert response.status_code == 200
+        assert response.json()["id"] == created["id"]
