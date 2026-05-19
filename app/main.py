@@ -8,11 +8,14 @@ from fastapi.responses import JSONResponse
 from app.api.routes import employees, insights
 from app.core.config import get_settings
 from app.core.exceptions import DomainError
+from app.core.logging import configure_logging
 from app.db.session import engine, init_db
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI) -> AsyncIterator[None]:
+    settings = get_settings()
+    configure_logging(settings.log_level)
     init_db(engine)
     yield
 
