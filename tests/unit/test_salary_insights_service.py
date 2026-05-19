@@ -52,3 +52,22 @@ class TestMinMaxSalaryByCountry:
             Decimal("100.00"),
             Decimal("500.00"),
         )
+
+
+class TestAverageSalaryByCountryAndTitle:
+    def test_returns_empty_dict_when_country_has_no_employees(self, db: Session) -> None:
+        assert SalaryInsightsService(db).average_salary_by_country_and_title("IN") == {}
+
+    def test_groups_by_job_title_and_quantizes(self, db: Session) -> None:
+        rows = [
+            ("Engineer", Decimal("100")),
+            ("Engineer", Decimal("200")),
+            ("Manager", Decimal("500")),
+        ]
+        for title, salary in rows:
+            db.add(Employee(full_name="X", job_title=title, country="IN", salary=salary))
+        db.commit()
+
+        result = SalaryInsightsService(db).average_salary_by_country_and_title("IN")
+
+        assert result == {"Engineer": Decimal("150.00"), "Manager": Decimal("500.00")}
