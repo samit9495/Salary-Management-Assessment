@@ -106,6 +106,19 @@ class TestListEmployeesAPI:
         names = {row["full_name"] for row in rows}
         assert names == {"Jane Doe", "Jasmine Lee"}
 
+    def test_list_employees_sort_by_salary_desc(self, client: TestClient) -> None:
+        client.post("/employees", json=_valid_payload(full_name="Low", salary="100.00"))
+        client.post("/employees", json=_valid_payload(full_name="High", salary="999.00"))
+        client.post("/employees", json=_valid_payload(full_name="Mid", salary="500.00"))
+
+        rows = client.get("/employees", params={"sort": "-salary"}).json()
+
+        assert [r["full_name"] for r in rows] == ["High", "Mid", "Low"]
+
+    def test_list_employees_rejects_unknown_sort_key(self, client: TestClient) -> None:
+        response = client.get("/employees", params={"sort": "ssn"})
+        assert response.status_code == 422
+
 
 class TestUpdateEmployeeAPI:
     def test_put_employee_updates_provided_fields(self, client: TestClient) -> None:
