@@ -3,7 +3,7 @@ from sqlalchemy.orm import Session
 from app.core.exceptions import EmployeeNotFound
 from app.models.employee import Employee
 from app.repositories.employee_repository import EmployeeRepository
-from app.schemas.employee import EmployeeCreate
+from app.schemas.employee import EmployeeCreate, EmployeeUpdate
 
 
 class EmployeeService:
@@ -33,3 +33,11 @@ class EmployeeService:
         self, *, country: str | None = None, limit: int = 50, offset: int = 0
     ) -> list[Employee]:
         return self.repo.list(country=country, limit=limit, offset=offset)
+
+    def update(self, employee_id: int, payload: EmployeeUpdate) -> Employee:
+        employee = self.get(employee_id)
+        for field, value in payload.model_dump(exclude_unset=True).items():
+            setattr(employee, field, value)
+        self.db.commit()
+        self.db.refresh(employee)
+        return employee

@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends, Path, Query, status
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.schemas.employee import EmployeeCreate, EmployeeRead
+from app.schemas.employee import EmployeeCreate, EmployeeRead, EmployeeUpdate
 from app.services.employee_service import EmployeeService
 
 router = APIRouter(prefix="/employees", tags=["employees"])
@@ -40,4 +40,14 @@ def get_employee(
     db: Session = Depends(get_db),
 ) -> EmployeeRead:
     employee = EmployeeService(db).get(employee_id)
+    return EmployeeRead.model_validate(employee)
+
+
+@router.put("/{employee_id}", response_model=EmployeeRead)
+def update_employee(
+    employee_id: Annotated[int, Path(ge=1)],
+    payload: EmployeeUpdate,
+    db: Session = Depends(get_db),
+) -> EmployeeRead:
+    employee = EmployeeService(db).update(employee_id, payload)
     return EmployeeRead.model_validate(employee)

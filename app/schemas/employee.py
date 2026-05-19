@@ -14,6 +14,15 @@ class EmployeeCreate(EmployeeBase):
     """Payload used to create an employee."""
 
 
+class EmployeeUpdate(BaseModel):
+    """Partial update — all fields optional, validated when present."""
+
+    full_name: str | None = Field(default=None, min_length=1, max_length=200)
+    job_title: str | None = Field(default=None, min_length=1, max_length=100)
+    country: str | None = Field(default=None, min_length=2, max_length=2)
+    salary: Decimal | None = Field(default=None, ge=0, max_digits=12, decimal_places=2)
+
+
 class EmployeeRead(EmployeeBase):
     model_config = ConfigDict(from_attributes=True)
 
