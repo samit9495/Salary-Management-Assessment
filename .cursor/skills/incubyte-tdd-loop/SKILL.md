@@ -112,7 +112,30 @@ git commit -m "refactor: extract _aggregate_salaries helper"
 
 `refactor:` commits never add tests and never change behavior.
 
-### Step 9 — Loop back
+### Step 9 — Artifact audit (60-second check)
+
+Before looping back, ask whether the commit(s) you just made introduced any of these. Most loops produce **none** — that is correct. Spam in `artifacts/` is worse than gaps.
+
+| Trigger in the commit | Artifact to update |
+|-----------------------|--------------------|
+| A design decision picked among real alternatives | `artifacts/tradeoffs.md` |
+| A perf measurement, or any `perf:` commit | `artifacts/performance.md` |
+| A notable AI prompt that shipped (Stitch MCP, council outcome) | new file under `artifacts/prompts/` |
+| A cross-cutting structural change | diagram or note in `artifacts/architecture/` |
+| The start of a major feature | planning note in `artifacts/planning/` |
+
+If yes, append the entry using the templates in `artifacts/README.md` and commit:
+
+```bash
+git add artifacts/
+git commit -m "docs(artifacts): <one-line summary>"
+```
+
+If no, continue. The reminder hook at `scripts/git-hooks/post-commit` (see `scripts/git-hooks/README.md` for one-time install) prints a nag whenever the commit subject matches `^perf:`, `^docs(stitch):`, contains `!:` (breaking), or whose body opens with `tradeoff:` / `decision:` / `considered:`.
+
+Commits that almost never need an artifact entry: `test:`, plain `feat:` for a small behavior, `refactor:`, `chore:`, `style:`.
+
+### Step 10 — Loop back
 
 Pick the next behavior. Often it is the case the current "Decimal(0)" hard-code does not match the next test, so the next RED step will be:
 
