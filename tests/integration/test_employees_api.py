@@ -50,3 +50,10 @@ class TestGetEmployeeAPI:
 
         assert response.status_code == 404
         assert response.json()["code"] == "employee_not_found"
+
+
+class TestListEmployeesAPI:
+    def test_list_employees_returns_empty_list_when_no_rows(self, client: TestClient) -> None:
+        response = client.get("/employees")
+        assert response.status_code == 200
+        assert response.json() == []
