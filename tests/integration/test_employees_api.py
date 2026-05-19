@@ -57,3 +57,12 @@ class TestListEmployeesAPI:
         response = client.get("/employees")
         assert response.status_code == 200
         assert response.json() == []
+
+    def test_list_employees_returns_inserted_rows(self, client: TestClient) -> None:
+        client.post("/employees", json=_valid_payload(full_name="A"))
+        client.post("/employees", json=_valid_payload(full_name="B"))
+
+        response = client.get("/employees")
+        assert response.status_code == 200
+        names = [row["full_name"] for row in response.json()]
+        assert names == ["A", "B"]
