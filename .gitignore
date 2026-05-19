@@ -240,3 +240,6 @@ frontend/coverage/
 *.tsbuildinfo
 
 .cursor/mcp.json
+
+# Assessment brief (kept locally, not committed)
+Salary Management Assessment.pdf
