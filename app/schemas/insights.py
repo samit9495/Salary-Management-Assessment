@@ -25,3 +25,14 @@ class TitleCount(BaseModel):
 
 class TopTitles(BaseModel):
     titles: list[TitleCount] = Field(default_factory=list)
+
+
+class GlobalOverview(BaseModel):
+    total_employees: int
+    average_salary: Decimal
+    active_countries: int
+    active_titles: int
+
+
+class CountryDistribution(BaseModel):
+    counts: dict[str, int]

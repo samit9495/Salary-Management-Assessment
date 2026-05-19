@@ -4,9 +4,12 @@ from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.schemas.employee import EmployeeRead
 from app.schemas.insights import (
+    CountryDistribution,
     CountryInsights,
     CountryTitleAverages,
+    GlobalOverview,
     TitleCount,
     TopTitles,
 )
@@ -52,3 +55,22 @@ def top_titles(
 ) -> TopTitles:
     rows = SalaryInsightsService(db).top_titles_by_count(limit=limit)
     return TopTitles(titles=[TitleCount(title=t, count=c) for t, c in rows])
+
+
+@router.get("/overview", response_model=GlobalOverview)
+def overview(db: Session = Depends(get_db)) -> GlobalOverview:
+    return GlobalOverview(**SalaryInsightsService(db).global_overview())
+
+
+@router.get("/recent", response_model=list[EmployeeRead])
+def recent(
+    limit: Annotated[int, Query(ge=1, le=50)] = 10,
+    db: Session = Depends(get_db),
+) -> list[EmployeeRead]:
+    employees = SalaryInsightsService(db).recent_employees(limit=limit)
+    return [EmployeeRead.model_validate(e) for e in employees]
+
+
+@router.get("/distribution", response_model=CountryDistribution)
+def distribution(db: Session = Depends(get_db)) -> CountryDistribution:
+    return CountryDistribution(counts=SalaryInsightsService(db).employee_count_by_country_all())
