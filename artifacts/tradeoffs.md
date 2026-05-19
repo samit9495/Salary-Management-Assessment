@@ -84,6 +84,23 @@ snapshot tests because they pin layout, not behavior.
 the manual smoke scenarios for those.
 **Reversibility**: Easy.
 
+## Structured logging with stdlib, not structlog or an SDK
+
+**Considered**: stdlib `logging` + custom `JsonFormatter`, `structlog`,
+`loguru`, third-party APMs (Sentry, Datadog, OpenTelemetry).
+**Picked**: stdlib `logging` with a small `JsonFormatter` and a
+`request_id_var: ContextVar`, mounted via `RequestContextMiddleware`.
+**Why**: zero new dependencies, fits the "boring solution wins" rule.
+The formatter is ~30 lines, idempotent `configure_logging` only touches
+handlers it owns (so pytest's `caplog` keeps working), and Fly captures
+stdout, so log shipping is the platform's job. Sentry/Datadog buys
+real value but is out of scope for a single-tenant assessment tool.
+**Cost**: No structured ingest UI; queries are `fly logs | jq`. No
+distributed tracing. No automatic per-call sampling.
+**Reversibility**: Easy. The formatter is one file; swap to structlog
+or pipe to OTLP without touching call sites — every record already
+carries `request_id` and structured fields.
+
 ## Stitch MCP as a UI starting point, hand-refined every component
 
 **Considered**: Hand-write every component, generate with Stitch and
