@@ -1,3 +1,4 @@
+from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models.employee import Employee
@@ -19,3 +20,6 @@ class EmployeeRepository:
 
     def get(self, employee_id: int) -> Employee | None:
         return self.db.get(Employee, employee_id)
+
+    def list(self) -> list[Employee]:
+        return list(self.db.scalars(select(Employee).order_by(Employee.id)))

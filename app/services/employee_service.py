@@ -28,3 +28,6 @@ class EmployeeService:
         if employee is None:
             raise EmployeeNotFound(employee_id)
         return employee
+
+    def list(self) -> list[Employee]:
+        return self.repo.list()
