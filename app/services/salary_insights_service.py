@@ -44,3 +44,12 @@ class SalaryInsightsService:
             .order_by(Employee.job_title)
         ).all()
         return {title: Decimal(avg).quantize(SALARY_SCALE) for title, avg in rows}
+
+    def top_titles_by_count(self, *, limit: int) -> list[tuple[str, int]]:
+        rows = self.db.execute(
+            select(Employee.job_title, func.count(Employee.id).label("count"))
+            .group_by(Employee.job_title)
+            .order_by(func.count(Employee.id).desc(), Employee.job_title)
+            .limit(limit)
+        ).all()
+        return [(title, int(count)) for title, count in rows]
