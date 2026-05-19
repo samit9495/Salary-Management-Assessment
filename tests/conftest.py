@@ -8,6 +8,7 @@ from sqlalchemy.orm import Session, sessionmaker
 from app.db.base import Base
 from app.db.session import get_db
 from app.main import app
+from app import models as _models  # noqa: F401  - register ORM models on Base.metadata
 
 
 @pytest.fixture
