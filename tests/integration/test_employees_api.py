@@ -100,6 +100,25 @@ class TestListEmployeesAPI:
         assert response.headers["x-total-count"] == "3"
         assert len(response.json()) == 2
 
+
+class TestListDistinctCountries:
+    def test_returns_each_country_with_count(self, client: TestClient) -> None:
+        client.post("/employees", json=_valid_payload(country="IN"))
+        client.post("/employees", json=_valid_payload(country="IN"))
+        client.post("/employees", json=_valid_payload(country="US"))
+
+        body = client.get("/employees/countries").json()
+
+        assert body == {"countries": [{"code": "IN", "count": 2}, {"code": "US", "count": 1}]}
+
+    def test_respects_q_filter(self, client: TestClient) -> None:
+        client.post("/employees", json=_valid_payload(country="IN", full_name="Jane"))
+        client.post("/employees", json=_valid_payload(country="US", full_name="John"))
+
+        body = client.get("/employees/countries", params={"q": "jane"}).json()
+
+        assert body == {"countries": [{"code": "IN", "count": 1}]}
+
     def test_list_employees_filters_by_country(self, client: TestClient) -> None:
         client.post("/employees", json=_valid_payload(full_name="Indian", country="IN"))
         client.post("/employees", json=_valid_payload(full_name="American", country="US"))
