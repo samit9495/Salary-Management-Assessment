@@ -1,10 +1,15 @@
-from typing import Annotated
+from typing import Annotated, Literal
 
 from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
-from app.schemas.analytics import PayrollBurdenResponse, PayrollEntry
+from app.schemas.analytics import (
+    OutlierEntry,
+    OutlierResponse,
+    PayrollBurdenResponse,
+    PayrollEntry,
+)
 from app.schemas.employee import EmployeeRead
 from app.schemas.insights import (
     CountryDistribution,
@@ -94,3 +99,19 @@ def payroll_by_country(db: Session = Depends(get_db)) -> PayrollBurdenResponse:
 @router.get("/payroll/by-title", response_model=PayrollBurdenResponse)
 def payroll_by_title(db: Session = Depends(get_db)) -> PayrollBurdenResponse:
     return _payroll_payload(SalaryInsightsService(db).payroll_by_title())
+
+
+@router.get("/outliers", response_model=OutlierResponse)
+def outliers(
+    bucket: Annotated[Literal["bottom", "top"], Query()] = "bottom",
+    min_group_size: Annotated[int, Query(ge=2, le=200)] = 5,
+    limit: Annotated[int, Query(ge=1, le=100)] = 20,
+    db: Session = Depends(get_db),
+) -> OutlierResponse:
+    rows = SalaryInsightsService(db).salary_outliers(
+        bucket=bucket, min_group_size=min_group_size, limit=limit
+    )
+    return OutlierResponse(
+        bucket=bucket,
+        entries=[OutlierEntry(**row) for row in rows],
+    )
