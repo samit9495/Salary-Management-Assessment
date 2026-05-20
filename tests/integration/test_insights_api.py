@@ -73,6 +73,32 @@ class TestTopTitlesEndpoint:
         }
 
 
+class TestInsightsCountryCaseInsensitive:
+    def test_lowercase_path_matches_uppercase(self, client: TestClient) -> None:
+        _post(client, country="IN", salary="100")
+
+        lower_body = client.get("/insights/by-country/in").json()
+        upper_body = client.get("/insights/by-country/IN").json()
+
+        assert lower_body == upper_body
+        assert lower_body["employee_count"] == 1
+
+    def test_lowercase_path_returns_canonical_country(self, client: TestClient) -> None:
+        _post(client, country="IN", salary="100")
+        body = client.get("/insights/by-country/in").json()
+        assert body["country"] == "IN"
+
+
+class TestEmployeesCountryQueryCaseInsensitive:
+    def test_lowercase_country_filter_matches_uppercase(self, client: TestClient) -> None:
+        _post(client, country="IN")
+        _post(client, country="US")
+
+        body = client.get("/employees", params={"country": "in"}).json()
+
+        assert [row["country"] for row in body] == ["IN"]
+
+
 class TestGlobalOverviewEndpoint:
     def test_empty_db_returns_zero_overview(self, client: TestClient) -> None:
         body = client.get("/insights/overview").json()
