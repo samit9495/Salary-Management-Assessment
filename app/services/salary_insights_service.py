@@ -7,6 +7,16 @@ from app.models.employee import Employee
 
 SALARY_SCALE = Decimal("0.01")
 
+# Canonical (case-insensitive) form of a job title used for grouping and
+# aggregation. Storage keeps the original casing per row; insights collapse
+# equivalent titles via this expression.
+title_canonical = func.lower(Employee.job_title)
+
+
+def display_title(canonical: str) -> str:
+    """Human-readable form of a lowercase canonical title."""
+    return canonical.title()
+
 
 class SalaryInsightsService:
     """Aggregate salary metrics for the Employee aggregate.
@@ -38,21 +48,24 @@ class SalaryInsightsService:
 
     def average_salary_by_country_and_title(self, country: str) -> dict[str, Decimal]:
         rows = self.db.execute(
-            select(Employee.job_title, func.avg(Employee.salary))
+            select(title_canonical, func.avg(Employee.salary))
             .where(Employee.country == country)
-            .group_by(Employee.job_title)
-            .order_by(Employee.job_title)
+            .group_by(title_canonical)
+            .order_by(title_canonical)
         ).all()
-        return {title: Decimal(avg).quantize(SALARY_SCALE) for title, avg in rows}
+        return {
+            display_title(canonical): Decimal(avg).quantize(SALARY_SCALE)
+            for canonical, avg in rows
+        }
 
     def top_titles_by_count(self, *, limit: int) -> list[tuple[str, int]]:
         rows = self.db.execute(
-            select(Employee.job_title, func.count(Employee.id).label("count"))
-            .group_by(Employee.job_title)
-            .order_by(func.count(Employee.id).desc(), Employee.job_title)
+            select(title_canonical, func.count(Employee.id).label("count"))
+            .group_by(title_canonical)
+            .order_by(func.count(Employee.id).desc(), title_canonical)
             .limit(limit)
         ).all()
-        return [(title, int(count)) for title, count in rows]
+        return [(display_title(canonical), int(count)) for canonical, count in rows]
 
     def employee_count_by_country(self, country: str) -> int:
         return int(
@@ -80,7 +93,7 @@ class SalaryInsightsService:
                 func.count(Employee.id),
                 func.avg(Employee.salary),
                 func.count(func.distinct(Employee.country)),
-                func.count(func.distinct(Employee.job_title)),
+                func.count(func.distinct(title_canonical)),
             )
         ).one()
         total, avg, country_n, title_n = row
