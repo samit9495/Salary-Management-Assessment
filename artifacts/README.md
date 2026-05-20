@@ -1,6 +1,9 @@
 # Artifacts
 
-The PDF asks for artifacts that explain the thinking behind the solution. Drop them here as the work progresses. Suggested structure below — adapt freely.
+The PDF asks for artifacts that explain the thinking behind the solution.
+All of the curated planning, architecture, decisions, and performance
+work has been consolidated under [planning/](planning/) — start
+[there](planning/README.md) for the reviewer-facing reading order.
 
 > *"Please commit any artifacts that help us understand your thinking and approach. Examples might include: Planning or design notes, Architecture diagrams, Prompts or instructions used with AI tools, Trade-off explanations, Performance considerations."* — Salary Management Assessment
 
@@ -8,75 +11,56 @@ The PDF asks for artifacts that explain the thinking behind the solution. Drop t
 
 ```
 artifacts/
-├── README.md             <- you are here
-├── planning/             <- design notes, decision logs (markdown)
-│   └── .gitkeep
-├── architecture/         <- diagrams (mermaid in .md, or PNG/SVG)
-│   └── .gitkeep
-├── prompts/              <- notable AI prompts and how they shaped the solution
-│   └── .gitkeep
-├── tradeoffs.md          <- explicit decisions: why FastAPI, why SQLite, why bulk_insert, why shadcn/ui, why Stitch MCP, ...
-├── performance.md        <- seed benchmark, query plans, optimization log
-└── demo/                 <- placeholder for the demo video link, GIFs, screenshots
-    └── .gitkeep
+├── README.md             <- you are here (layout map)
+├── planning/             <- SINGLE curated planning surface (start here)
+│   ├── README.md
+│   ├── roadmap.md
+│   ├── implementation-phases.md
+│   ├── backend-architecture.md
+│   ├── frontend-architecture.md
+│   ├── analytics-strategy.md
+│   ├── seed-performance-strategy.md
+│   ├── testing-strategy.md
+│   ├── ui-ux-decisions.md
+│   ├── ai-assisted-workflow.md
+│   ├── scalability-considerations.md
+│   └── tradeoffs-and-decisions.md
+├── architecture/         <- shim → planning/backend-architecture.md + frontend-architecture.md
+├── tradeoffs.md          <- shim → planning/tradeoffs-and-decisions.md
+├── performance.md        <- shim → planning/seed-performance-strategy.md
+├── prompts/              <- driving prompts + Stitch / LLM Council catalog
+└── demo/                 <- demo video link + screenshots
 ```
 
 ## What goes where
 
-| File / folder | What to record |
+| Location | What to read |
 |---|---|
-| `planning/` | Each major design step. Dated markdown notes. Sub-folders OK if it grows. |
-| `architecture/` | Mermaid diagrams (`.md` files) and/or exported PNGs. Keep them small and focused. |
-| `prompts/` | Prompts you sent the agent that mattered, including Stitch MCP prompts for generated screens. Pair each with the outcome and why it worked (or did not). |
-| `tradeoffs.md` | Single file. One trade-off per heading. State the alternatives considered, what you picked, and why. |
-| `performance.md` | Seed benchmark (10k rows time), insights endpoint latency, anything optimized. Include host/Python version when relevant. |
-| `demo/` | The video link goes in `demo/README.md` (or just in the project root README). GIFs and screenshots live here. |
+| [planning/](planning/) | **Single curated planning surface.** Start at [planning/README.md](planning/README.md) for the index. |
+| [prompts/](prompts/) | High-signal driving prompts (verbatim) plus Stitch MCP and LLM Council prompts paired with outcomes. |
+| [architecture/](architecture/) | Shim — redirects to [planning/backend-architecture.md](planning/backend-architecture.md) + [planning/frontend-architecture.md](planning/frontend-architecture.md). |
+| [tradeoffs.md](tradeoffs.md) | Shim — redirects to [planning/tradeoffs-and-decisions.md](planning/tradeoffs-and-decisions.md). |
+| [performance.md](performance.md) | Shim — redirects to [planning/seed-performance-strategy.md](planning/seed-performance-strategy.md). |
+| [demo/](demo/) | Demo video link in `demo/README.md` (or root `README.md`); screenshots / GIFs alongside. |
 
-## Quick templates
+## Companion locations (outside artifacts/)
 
-### `tradeoffs.md` entry
+- [`../.cursor/plans/`](../.cursor/plans/) — raw, AI-generated planning files (audit trail; preserved verbatim).
+- [`../tasks/`](../tasks/) — working notes (`todo.md`, `lessons.md`, `manual-test-scenarios.md`).
+- [`../.cursor/rules/`](../.cursor/rules/) — always-apply engineering policy referenced from the planning docs.
 
-```markdown
-## Why FastAPI over Django/DRF
+## Adding new artifacts
 
-**Considered**: Django+DRF, FastAPI+SQLAlchemy, Flask, Node+Express.
-**Picked**: FastAPI + SQLAlchemy 2 + Pydantic v2.
-**Why**: lighter footprint for a small single-tenant app; Pydantic v2 doubles as request validation and response serialization; less boilerplate for ten endpoints.
-**Cost**: less batteries-included than Django (auth, admin) — acceptable for the assessment scope.
-```
+When a new decision lands:
 
-### `performance.md` entry
+1. Add the trade-off to [planning/tradeoffs-and-decisions.md](planning/tradeoffs-and-decisions.md) under the right category.
+2. Update the relevant per-concern document (e.g. [planning/backend-architecture.md](planning/backend-architecture.md), [planning/analytics-strategy.md](planning/analytics-strategy.md)).
+3. If it's a performance number, append a dated entry to [planning/seed-performance-strategy.md](planning/seed-performance-strategy.md).
+4. If it's an AI workflow change, append to [planning/ai-assisted-workflow.md](planning/ai-assisted-workflow.md).
 
-```markdown
-## 2026-MM-DD — Seed 10,000 employees
-
-- Approach: `db.execute(insert(Employee), [dict, ...])`, single transaction.
-- Host: macOS 14.5, M2, Python 3.12.
-- Result: **2.84s** for 10,000 rows.
-- Notes: tried `bulk_insert_mappings` (2.91s) and per-row `add` (12.4s). PRAGMA `journal_mode=WAL` did not help at this volume.
-```
-
-### `prompts/<name>.md` entry
-
-```markdown
-# Prompt: design the salary insights service
-
-**Context**: needed to decide between ORM aggregation and raw SQL.
-**Prompt**: "COUNCIL: ORM vs raw SQL for avg/min/max grouped by country on a 10k-row SQLite table."
-**Outcome**: council recommended ORM; the resulting query is in `app/services/salary_insights_service.py:23`.
-```
-
-### `prompts/stitch-<screen>.md` entry
-
-```markdown
-# Stitch MCP: dashboard layout
-
-**Context**: needed a responsive shell with sidebar navigation and a KPI strip.
-**Prompt** (sent to the `stitch` MCP): "React 18 + TS + Tailwind + shadcn/ui dashboard shell — left sidebar (Employees, Insights, Dashboard), top bar with search, main area with 4 shadcn `Card` KPI tiles + Recharts `BarChart` placeholder. Responsive down to 768px."
-**What was kept**: sidebar markup, card grid layout.
-**What was rewritten**: removed inline color hex codes, swapped raw `<button>` for shadcn `Button`, added focus-ring classes for accessibility, split into `components/layout/AppShell.tsx` and `components/dashboard/KpiGrid.tsx`.
-**Tests added before commit**: `AppShell.test.tsx` verifies the active route highlight; `KpiGrid.test.tsx` verifies values render when the query resolves.
-```
+Every reusable template (trade-off entry, performance entry, Stitch
+prompt format) lives in the destination doc itself, so the example
+sits next to the real entries.
 
 ## Demo video
 
