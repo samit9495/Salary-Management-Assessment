@@ -40,19 +40,19 @@ class EmployeeRepository:
         limit: int,
         offset: int,
     ) -> list[Employee]:
-        stmt = self._filtered(select(Employee), country=country, q=q)
+        stmt = self.apply_filters(select(Employee), country=country, q=q)
         order_column = _resolve_sort(sort)
         stmt = stmt.order_by(order_column).limit(limit).offset(offset)
         return list(self.db.scalars(stmt))
 
     def count(self, *, country: str | None, q: str | None) -> int:
-        stmt = self._filtered(select(func.count(Employee.id)), country=country, q=q)
+        stmt = self.apply_filters(select(func.count(Employee.id)), country=country, q=q)
         return int(self.db.scalar(stmt) or 0)
 
     def distinct_countries(
         self, *, country: str | None = None, q: str | None = None
     ) -> list[tuple[str, int]]:
-        stmt = self._filtered(
+        stmt = self.apply_filters(
             select(Employee.country, func.count(Employee.id)),
             country=country,
             q=q,
@@ -60,7 +60,13 @@ class EmployeeRepository:
         return [(code, int(count)) for code, count in self.db.execute(stmt).all()]
 
     @staticmethod
-    def _filtered(stmt, *, country: str | None, q: str | None):
+    def apply_filters(stmt, *, country: str | None, q: str | None):
+        """Apply the shared (country, q-substring) filters to ``stmt``.
+
+        Public because both :class:`EmployeeRepository` and the
+        :class:`~app.services.compensation_analysis_service.CompensationAnalysisService`
+        compose queries from the same filter contract.
+        """
         if country is not None:
             stmt = stmt.where(Employee.country == country)
         if q:

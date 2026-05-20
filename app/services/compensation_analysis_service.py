@@ -33,6 +33,10 @@ class CompensationAnalysisService:
         country: str | None = None,
         q: str | None = None,
     ) -> dict[int, dict[str, Decimal]]:
+        # Local copy of the canonical (lowercased) job-title expression also
+        # defined in app.services.salary_insights_service.title_canonical.
+        # Kept local so the two services own their own SQL without an
+        # implicit shared import.
         title_canonical = func.lower(Employee.job_title)
         partition = (Employee.country, title_canonical)
 
@@ -47,7 +51,7 @@ class CompensationAnalysisService:
             peer_min.label("peer_min"),
             peer_max.label("peer_max"),
         )
-        stmt = EmployeeRepository._filtered(stmt, country=country, q=q)
+        stmt = EmployeeRepository.apply_filters(stmt, country=country, q=q)
 
         result: dict[int, dict[str, Decimal]] = {}
         for emp_id, salary, peer_avg_val, peer_min_val, peer_max_val in self.db.execute(stmt):
