@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Path, Query
 from sqlalchemy.orm import Session
 
 from app.db.session import get_db
+from app.schemas.analytics import PayrollBurdenResponse, PayrollEntry
 from app.schemas.employee import EmployeeRead
 from app.schemas.insights import (
     CountryDistribution,
@@ -14,6 +15,13 @@ from app.schemas.insights import (
     TopTitles,
 )
 from app.services.salary_insights_service import SalaryInsightsService
+
+
+def _payroll_payload(payroll: dict[str, object]) -> PayrollBurdenResponse:
+    return PayrollBurdenResponse(
+        total=payroll["total"],  # type: ignore[arg-type]
+        entries=[PayrollEntry(**entry) for entry in payroll["entries"]],  # type: ignore[arg-type]
+    )
 
 router = APIRouter(prefix="/insights", tags=["insights"])
 
@@ -76,3 +84,13 @@ def recent(
 @router.get("/distribution", response_model=CountryDistribution)
 def distribution(db: Session = Depends(get_db)) -> CountryDistribution:
     return CountryDistribution(counts=SalaryInsightsService(db).employee_count_by_country_all())
+
+
+@router.get("/payroll/by-country", response_model=PayrollBurdenResponse)
+def payroll_by_country(db: Session = Depends(get_db)) -> PayrollBurdenResponse:
+    return _payroll_payload(SalaryInsightsService(db).payroll_by_country())
+
+
+@router.get("/payroll/by-title", response_model=PayrollBurdenResponse)
+def payroll_by_title(db: Session = Depends(get_db)) -> PayrollBurdenResponse:
+    return _payroll_payload(SalaryInsightsService(db).payroll_by_title())
