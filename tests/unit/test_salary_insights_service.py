@@ -140,6 +140,61 @@ class TestCountryDistribution:
         assert distribution == {"IN": 2, "US": 1}
 
 
+class TestSalaryOutliers:
+    def _seed(self, db: Session) -> None:
+        # Engineers in IN: salaries 1..20 → 20 buckets, one per salary
+        for i in range(1, 21):
+            db.add(
+                Employee(
+                    full_name=f"IN-Eng-{i}",
+                    job_title="Engineer",
+                    country="IN",
+                    salary=Decimal(i),
+                )
+            )
+        # Tiny group: only 2 designers in US — should be filtered by min_group_size
+        for i in range(1, 3):
+            db.add(
+                Employee(
+                    full_name=f"US-Des-{i}",
+                    job_title="Designer",
+                    country="US",
+                    salary=Decimal(i * 100),
+                )
+            )
+        db.commit()
+
+    def test_returns_empty_when_no_employees(self, db: Session) -> None:
+        result = SalaryInsightsService(db).salary_outliers(
+            bucket="bottom", min_group_size=5, limit=10
+        )
+        assert result == []
+
+    def test_bottom_returns_lowest_bucket_in_peer_group(self, db: Session) -> None:
+        self._seed(db)
+
+        result = SalaryInsightsService(db).salary_outliers(
+            bucket="bottom", min_group_size=5, limit=10
+        )
+
+        names = [e["full_name"] for e in result]
+        # IN engineers with salary 1 falls in bucket 1 of NTILE(20)
+        assert "IN-Eng-1" in names
+        # Tiny US designer group is skipped
+        assert all("US-Des" not in n for n in names)
+
+    def test_top_returns_highest_bucket_in_peer_group(self, db: Session) -> None:
+        self._seed(db)
+
+        result = SalaryInsightsService(db).salary_outliers(
+            bucket="top", min_group_size=5, limit=10
+        )
+
+        names = [e["full_name"] for e in result]
+        assert "IN-Eng-20" in names
+        assert all("US-Des" not in n for n in names)
+
+
 class TestPayrollBurden:
     def test_returns_empty_when_no_employees(self, db: Session) -> None:
         assert SalaryInsightsService(db).payroll_by_country() == {
