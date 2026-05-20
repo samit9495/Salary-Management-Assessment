@@ -1,3 +1,4 @@
+import json
 from typing import Annotated
 
 from pydantic import BeforeValidator
@@ -5,10 +6,15 @@ from pydantic_settings import BaseSettings, NoDecode, SettingsConfigDict
 
 
 def _parse_origins(value: object) -> object:
+    """Accept either a comma-separated string or a JSON array string.
+
+    ``NoDecode`` suppresses pydantic-settings' built-in JSON decoding,
+    so this validator owns both shapes.
+    """
     if isinstance(value, str):
         stripped = value.strip()
         if stripped.startswith("["):
-            return value
+            return json.loads(stripped)
         return [item.strip() for item in stripped.split(",") if item.strip()]
     return value
 
