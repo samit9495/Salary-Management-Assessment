@@ -2,6 +2,7 @@ import { AnalyticsSection } from "@/components/AnalyticsSection";
 import { CountryDistributionChart } from "@/components/CountryDistributionChart";
 import { InfoHint } from "@/components/InfoHint";
 import { KpiCard } from "@/components/KpiCard";
+import { SummaryList } from "@/components/SummaryList";
 import {
   useCountryDistribution,
   useGlobalOverview,
@@ -71,19 +72,14 @@ export function DashboardPage() {
               Loading…
             </p>
           ) : recent.data && recent.data.length > 0 ? (
-            <ul className="divide-y divide-slate-200 overflow-hidden rounded-md border border-slate-200 bg-white">
-              {recent.data.map((e) => (
-                <li
-                  key={e.id}
-                  className="flex items-center justify-between px-3 py-2 text-sm"
-                >
-                  <span className="font-medium text-slate-900">{e.full_name}</span>
-                  <span className="text-slate-600">
-                    {e.job_title} · {e.country}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <SummaryList
+              ariaLabel="Recent hires"
+              items={recent.data.map((e) => ({
+                key: String(e.id),
+                label: e.full_name,
+                value: `${e.job_title} · ${e.country}`,
+              }))}
+            />
           ) : (
             <p
               role="status"
