@@ -23,9 +23,6 @@ class CountryOption(BaseModel):
 class CountryOptionList(BaseModel):
     countries: list[CountryOption]
 
-_ALLOWED_SORT_VALUES = sorted(
-    [k for k in SORTABLE_FIELDS] + [f"-{k}" for k in SORTABLE_FIELDS]
-)
 _SORT_PATTERN = "^(-)?(" + "|".join(SORTABLE_FIELDS.keys()) + ")$"
 
 router = APIRouter(prefix="/employees", tags=["employees"])
