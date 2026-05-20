@@ -1,9 +1,15 @@
 from decimal import Decimal
+from typing import Literal
 
-from sqlalchemy import func, select
+from sqlalchemy import func, over, select
 from sqlalchemy.orm import Session
 
 from app.models.employee import Employee
+
+NTILE_BUCKETS = 20
+BOTTOM_BUCKET = 1
+TOP_BUCKET = NTILE_BUCKETS
+OutlierBucket = Literal["bottom", "top"]
 
 SALARY_SCALE = Decimal("0.01")
 PERCENTAGE_SCALE = Decimal("0.01")
@@ -103,6 +109,63 @@ class SalaryInsightsService:
         return list(
             self.db.scalars(select(Employee).order_by(Employee.id.desc()).limit(limit))
         )
+
+    def salary_outliers(
+        self,
+        *,
+        bucket: OutlierBucket,
+        min_group_size: int,
+        limit: int,
+    ) -> list[dict[str, object]]:
+        """Top or bottom 5% of salaries within each (country, title) peer group.
+
+        Uses NTILE(20) so the threshold scales with the group's distribution.
+        Groups smaller than ``min_group_size`` are skipped to avoid noise from
+        tiny populations (where any single employee would land in bucket 1
+        and bucket 20 simultaneously).
+        """
+        partition = (Employee.country, title_canonical)
+        bucket_col = over(
+            func.ntile(NTILE_BUCKETS),
+            partition_by=partition,
+            order_by=Employee.salary,
+        ).label("bucket")
+        group_size = over(func.count(Employee.id), partition_by=partition).label(
+            "group_size"
+        )
+
+        subq = select(
+            Employee.id,
+            Employee.full_name,
+            Employee.country,
+            Employee.job_title,
+            Employee.salary,
+            bucket_col,
+            group_size,
+        ).subquery()
+
+        target_bucket = BOTTOM_BUCKET if bucket == "bottom" else TOP_BUCKET
+        salary_order = subq.c.salary.asc() if bucket == "bottom" else subq.c.salary.desc()
+
+        stmt = (
+            select(subq)
+            .where(subq.c.bucket == target_bucket)
+            .where(subq.c.group_size >= min_group_size)
+            .order_by(salary_order, subq.c.id)
+            .limit(limit)
+        )
+
+        return [
+            {
+                "id": int(row.id),
+                "full_name": row.full_name,
+                "country": row.country,
+                "job_title": row.job_title,
+                "salary": Decimal(row.salary).quantize(SALARY_SCALE),
+                "bucket": int(row.bucket),
+            }
+            for row in self.db.execute(stmt)
+        ]
 
     def payroll_by_country(self) -> dict[str, object]:
         rows = self.db.execute(
