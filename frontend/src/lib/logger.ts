@@ -20,15 +20,12 @@ function isProductionBuild(): boolean {
 export const logger = {
   info(event: string, fields?: LogFields): void {
     if (isProductionBuild()) return;
-    // eslint-disable-next-line no-console
     console.info(event, fields);
   },
   warn(event: string, fields?: LogFields): void {
-    // eslint-disable-next-line no-console
     console.warn(event, fields);
   },
   error(event: string, fields?: LogFields): void {
-    // eslint-disable-next-line no-console
     console.error(event, fields);
   },
 };
