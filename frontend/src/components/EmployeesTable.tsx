@@ -1,4 +1,7 @@
+import { type ReactNode } from "react";
+
 import { CompaRatioBadge } from "@/components/CompaRatioBadge";
+import { InfoHint } from "@/components/InfoHint";
 import { RangePenetrationBar } from "@/components/RangePenetrationBar";
 import type {
   Employee,
@@ -12,14 +15,44 @@ type Props = {
   onDelete?: (employee: Employee) => void;
 };
 
-const BASE_COLUMNS = [
-  "Name",
-  "Title",
-  "Country",
-  "Salary",
-  "Department",
-  "Active",
-] as const;
+type Column = { key: string; header: ReactNode };
+
+const BASE_COLUMNS: Column[] = [
+  { key: "Name", header: "Name" },
+  { key: "Title", header: "Title" },
+  { key: "Country", header: "Country" },
+  { key: "Salary", header: "Salary" },
+  { key: "Department", header: "Department" },
+  { key: "Active", header: "Active" },
+];
+
+const TOOLTIP_COMPA =
+  "Compa-ratio: salary ÷ peer-group average. Below 80% may indicate underpayment risk; above 120% may need budget review.";
+const TOOLTIP_SPREAD =
+  "Range penetration: where the salary sits between peer-group min and max. 0% = floor, 100% = ceiling.";
+
+const ANALYTICS_COLUMNS: Column[] = [
+  {
+    key: "Compa",
+    header: (
+      <span className="inline-flex items-center gap-1">
+        Compa
+        <InfoHint label="Compa">{TOOLTIP_COMPA}</InfoHint>
+      </span>
+    ),
+  },
+  {
+    key: "Spread",
+    header: (
+      <span className="inline-flex items-center gap-1">
+        Spread
+        <InfoHint label="Spread">{TOOLTIP_SPREAD}</InfoHint>
+      </span>
+    ),
+  },
+];
+
+const ACTIONS_COLUMN: Column = { key: "Actions", header: "" };
 
 export function EmployeesTable({ employees, analyses, onEdit, onDelete }: Props) {
   if (employees.length === 0) {
@@ -34,9 +67,9 @@ export function EmployeesTable({ employees, analyses, onEdit, onDelete }: Props)
   }
 
   const showAnalytics = analyses !== undefined;
-  const columns = showAnalytics
-    ? [...BASE_COLUMNS, "Compa", "Spread", ""]
-    : [...BASE_COLUMNS, ""];
+  const columns: Column[] = showAnalytics
+    ? [...BASE_COLUMNS, ...ANALYTICS_COLUMNS, ACTIONS_COLUMN]
+    : [...BASE_COLUMNS, ACTIONS_COLUMN];
 
   return (
     <div className="overflow-hidden rounded-md border border-slate-200">
@@ -44,8 +77,8 @@ export function EmployeesTable({ employees, analyses, onEdit, onDelete }: Props)
         <thead className="bg-slate-100 text-left text-xs uppercase tracking-wide text-slate-600">
           <tr>
             {columns.map((col) => (
-              <th key={col} scope="col" className="px-3 py-2 font-medium">
-                {col}
+              <th key={col.key} scope="col" className="px-3 py-2 font-medium">
+                {col.header}
               </th>
             ))}
           </tr>
