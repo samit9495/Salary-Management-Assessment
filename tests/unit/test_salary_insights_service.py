@@ -140,6 +140,50 @@ class TestCountryDistribution:
         assert distribution == {"IN": 2, "US": 1}
 
 
+class TestPayrollBurden:
+    def test_returns_empty_when_no_employees(self, db: Session) -> None:
+        assert SalaryInsightsService(db).payroll_by_country() == {
+            "total": Decimal("0.00"),
+            "entries": [],
+        }
+
+    def test_payroll_by_country_returns_totals_and_percentages(self, db: Session) -> None:
+        rows = [
+            ("IN", Decimal("60")),
+            ("IN", Decimal("40")),
+            ("US", Decimal("300")),
+        ]
+        for country, salary in rows:
+            db.add(Employee(full_name="X", job_title="E", country=country, salary=salary))
+        db.commit()
+
+        result = SalaryInsightsService(db).payroll_by_country()
+
+        assert result["total"] == Decimal("400.00")
+        assert result["entries"] == [
+            {"key": "US", "total": Decimal("300.00"), "percentage": Decimal("75.00")},
+            {"key": "IN", "total": Decimal("100.00"), "percentage": Decimal("25.00")},
+        ]
+
+    def test_payroll_by_title_groups_case_insensitively(self, db: Session) -> None:
+        rows = [
+            ("Engineer", Decimal("50")),
+            ("engineer", Decimal("50")),
+            ("Manager", Decimal("100")),
+        ]
+        for title, salary in rows:
+            db.add(Employee(full_name="X", job_title=title, country="IN", salary=salary))
+        db.commit()
+
+        result = SalaryInsightsService(db).payroll_by_title()
+
+        assert result["total"] == Decimal("200.00")
+        assert result["entries"] == [
+            {"key": "Engineer", "total": Decimal("100.00"), "percentage": Decimal("50.00")},
+            {"key": "Manager", "total": Decimal("100.00"), "percentage": Decimal("50.00")},
+        ]
+
+
 class TestRecentEmployees:
     def test_returns_most_recent_by_id_descending(self, db: Session) -> None:
         for name in ("A", "B", "C", "D"):
