@@ -19,13 +19,16 @@ from app.schemas.insights import (
     TitleCount,
     TopTitles,
 )
-from app.services.salary_insights_service import SalaryInsightsService
+from app.services.salary_insights_service import (
+    PayrollResult,
+    SalaryInsightsService,
+)
 
 
-def _payroll_payload(payroll: dict[str, object]) -> PayrollBurdenResponse:
+def _payroll_payload(payroll: PayrollResult) -> PayrollBurdenResponse:
     return PayrollBurdenResponse(
-        total=payroll["total"],  # type: ignore[arg-type]
-        entries=[PayrollEntry(**entry) for entry in payroll["entries"]],  # type: ignore[arg-type]
+        total=payroll["total"],
+        entries=[PayrollEntry(**entry) for entry in payroll["entries"]],
     )
 
 router = APIRouter(prefix="/insights", tags=["insights"])

@@ -1,5 +1,5 @@
 from decimal import Decimal
-from typing import Literal
+from typing import Literal, TypedDict
 
 from sqlalchemy import func, over, select
 from sqlalchemy.orm import Session
@@ -14,6 +14,34 @@ OutlierBucket = Literal["bottom", "top"]
 SALARY_SCALE = Decimal("0.01")
 PERCENTAGE_SCALE = Decimal("0.01")
 
+
+class PayrollEntryResult(TypedDict):
+    key: str
+    total: Decimal
+    percentage: Decimal
+
+
+class PayrollResult(TypedDict):
+    total: Decimal
+    entries: list[PayrollEntryResult]
+
+
+class GlobalOverviewResult(TypedDict):
+    total_employees: int
+    average_salary: Decimal
+    active_countries: int
+    active_titles: int
+
+
+class OutlierResult(TypedDict):
+    id: int
+    full_name: str
+    country: str
+    job_title: str
+    salary: Decimal
+    bucket: int
+
+
 # Canonical (case-insensitive) form of a job title used for grouping and
 # aggregation. Storage keeps the original casing per row; insights collapse
 # equivalent titles via this expression.
@@ -25,11 +53,9 @@ def display_title(canonical: str) -> str:
     return canonical.title()
 
 
-def _payroll_response(
-    rows: list[tuple[str, Decimal]]
-) -> dict[str, object]:
+def _payroll_response(rows: list[tuple[str, Decimal]]) -> PayrollResult:
     total = sum((Decimal(t) for _, t in rows), Decimal("0"))
-    entries: list[dict[str, object]] = []
+    entries: list[PayrollEntryResult] = []
     for key, raw_total in rows:
         amount = Decimal(raw_total).quantize(SALARY_SCALE)
         percentage = (
@@ -116,7 +142,7 @@ class SalaryInsightsService:
         bucket: OutlierBucket,
         min_group_size: int,
         limit: int,
-    ) -> list[dict[str, object]]:
+    ) -> list[OutlierResult]:
         """Top or bottom 5% of salaries within each (country, title) peer group.
 
         Uses NTILE(20) so the threshold scales with the group's distribution.
@@ -156,18 +182,18 @@ class SalaryInsightsService:
         )
 
         return [
-            {
-                "id": int(row.id),
-                "full_name": row.full_name,
-                "country": row.country,
-                "job_title": row.job_title,
-                "salary": Decimal(row.salary).quantize(SALARY_SCALE),
-                "bucket": int(row.bucket),
-            }
+            OutlierResult(
+                id=int(row.id),
+                full_name=row.full_name,
+                country=row.country,
+                job_title=row.job_title,
+                salary=Decimal(row.salary).quantize(SALARY_SCALE),
+                bucket=int(row.bucket),
+            )
             for row in self.db.execute(stmt)
         ]
 
-    def payroll_by_country(self) -> dict[str, object]:
+    def payroll_by_country(self) -> PayrollResult:
         rows = self.db.execute(
             select(Employee.country, func.sum(Employee.salary))
             .group_by(Employee.country)
@@ -175,7 +201,7 @@ class SalaryInsightsService:
         ).all()
         return _payroll_response([(country, total) for country, total in rows])
 
-    def payroll_by_title(self) -> dict[str, object]:
+    def payroll_by_title(self) -> PayrollResult:
         rows = self.db.execute(
             select(title_canonical, func.sum(Employee.salary))
             .group_by(title_canonical)
@@ -185,7 +211,7 @@ class SalaryInsightsService:
             [(display_title(canonical), total) for canonical, total in rows]
         )
 
-    def global_overview(self) -> dict[str, object]:
+    def global_overview(self) -> GlobalOverviewResult:
         row = self.db.execute(
             select(
                 func.count(Employee.id),
