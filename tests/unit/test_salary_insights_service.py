@@ -72,6 +72,20 @@ class TestAverageSalaryByCountryAndTitle:
 
         assert result == {"Engineer": Decimal("150.00"), "Manager": Decimal("500.00")}
 
+    def test_collapses_case_variants_into_single_bucket(self, db: Session) -> None:
+        rows = [
+            ("Engineer", Decimal("100")),
+            ("engineer", Decimal("200")),
+            ("ENGINEER", Decimal("300")),
+        ]
+        for title, salary in rows:
+            db.add(Employee(full_name="X", job_title=title, country="IN", salary=salary))
+        db.commit()
+
+        result = SalaryInsightsService(db).average_salary_by_country_and_title("IN")
+
+        assert result == {"Engineer": Decimal("200.00")}
+
 
 class TestGlobalOverview:
     def test_returns_zeros_when_no_employees(self, db: Session) -> None:
@@ -161,3 +175,12 @@ class TestTopTitlesByEmployeeCount:
         result = SalaryInsightsService(db).top_titles_by_count(limit=2)
 
         assert result == [("Engineer", 3), ("Manager", 2)]
+
+    def test_collapses_case_variants(self, db: Session) -> None:
+        for title in ("Engineer", "engineer", "ENGINEER", "Manager"):
+            db.add(Employee(full_name="X", job_title=title, country="IN", salary=Decimal("1")))
+        db.commit()
+
+        result = SalaryInsightsService(db).top_titles_by_count(limit=5)
+
+        assert result == [("Engineer", 3), ("Manager", 1)]
