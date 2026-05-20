@@ -2,6 +2,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render, screen } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { insightsApi } from "@/services/insights";
 
@@ -28,7 +29,9 @@ function renderPage() {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <DashboardPage />
+      <TooltipProvider delayDuration={0}>
+        <DashboardPage />
+      </TooltipProvider>
     </QueryClientProvider>,
   );
 }
@@ -56,6 +59,26 @@ describe("DashboardPage", () => {
     expect(screen.getByText("75000.00")).toBeInTheDocument();
     expect(screen.getByText("5")).toBeInTheDocument();
     expect(screen.getByText("12")).toBeInTheDocument();
+  });
+
+  it("exposes info tooltips beside Employees by Country and Recent Hires", async () => {
+    apiMock.overview.mockResolvedValue({
+      total_employees: 1,
+      average_salary: "1.00",
+      active_countries: 1,
+      active_titles: 1,
+    });
+    apiMock.recent.mockResolvedValue([]);
+    apiMock.distribution.mockResolvedValue({ counts: { IN: 1 } });
+
+    renderPage();
+
+    expect(
+      await screen.findByRole("button", { name: /employees by country/i }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: /recent hires/i }),
+    ).toBeInTheDocument();
   });
 
   it("renders recent hires when present", async () => {
