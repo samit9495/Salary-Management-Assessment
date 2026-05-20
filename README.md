@@ -79,20 +79,25 @@ npm run test:coverage
 
 ## API surface
 
-| Method | Path                                           | Purpose                                    |
-| ------ | ---------------------------------------------- | ------------------------------------------ |
-| `GET`  | `/`                                            | Health                                     |
-| `POST` | `/employees`                                   | Create                                     |
-| `GET`  | `/employees?country=&q=&sort=&limit=&offset=`  | List (`X-Total-Count` header)              |
-| `GET`  | `/employees/{id}`                              | Get one (404 if missing)                   |
-| `PUT`  | `/employees/{id}`                              | Partial update                             |
-| `DELETE` | `/employees/{id}`                            | Delete                                     |
-| `GET`  | `/insights/by-country/{country}`               | avg / min / max / count                    |
-| `GET`  | `/insights/by-country/{country}/by-title`      | avg salary per job title within a country  |
-| `GET`  | `/insights/top-titles?limit=`                  | most common job titles                     |
-| `GET`  | `/insights/overview`                           | Org-wide KPIs                              |
-| `GET`  | `/insights/recent?limit=`                      | most recently created employees            |
-| `GET`  | `/insights/distribution`                       | per-country employee counts                |
+| Method | Path                                                          | Purpose                                                         |
+| ------ | ------------------------------------------------------------- | --------------------------------------------------------------- |
+| `GET`  | `/`                                                           | Health                                                          |
+| `POST` | `/employees`                                                  | Create                                                          |
+| `GET`  | `/employees?country=&q=&sort=&limit=&offset=`                 | List (`X-Total-Count` header; country is case-insensitive)      |
+| `GET`  | `/employees/countries?country=&q=`                            | Distinct countries with counts under the same filter chain      |
+| `GET`  | `/employees/compensation-analysis?country=&q=`                | Per-id compa-ratio + range-penetration via window function      |
+| `GET`  | `/employees/{id}`                                             | Get one (404 if missing)                                        |
+| `PUT`  | `/employees/{id}`                                             | Partial update                                                  |
+| `DELETE` | `/employees/{id}`                                           | Delete                                                          |
+| `GET`  | `/insights/by-country/{country}`                              | avg / min / max / count (path is case-insensitive)              |
+| `GET`  | `/insights/by-country/{country}/by-title`                     | avg salary per job title within a country (titles case-folded)  |
+| `GET`  | `/insights/top-titles?limit=`                                 | most common job titles                                          |
+| `GET`  | `/insights/overview`                                          | Org-wide KPIs                                                   |
+| `GET`  | `/insights/recent?limit=`                                     | most recently created employees                                 |
+| `GET`  | `/insights/distribution`                                      | per-country employee counts                                     |
+| `GET`  | `/insights/payroll/by-country`                                | total + per-country payroll burden with percentages             |
+| `GET`  | `/insights/payroll/by-title`                                  | total + per-title payroll burden with percentages               |
+| `GET`  | `/insights/outliers?bucket=bottom\|top&min_group_size=&limit=` | NTILE(20) per peer group: bottom 5% / top 5% compensated         |
 
 Errors share a uniform shape: `{"detail": "...", "code": "..."}` —
 `employee_not_found` (404), `duplicate_email` (409), Pydantic validation (422).

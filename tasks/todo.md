@@ -12,6 +12,19 @@ _(seed with whatever the user hands you next; the implementation work is not sta
 
 ## Completed
 
+### 2026-05-20 — Bug fixes & advanced HR analytics
+- [x] Phase A — title-case insensitivity in aggregations (shared `title_canonical` + `display_title`)
+- [x] Phase B — country-case insensitivity (Pydantic `BeforeValidator`, route uppercasing)
+- [x] Phase C — reusable `SalaryBarChart` with `YAxis width=80` + compact tick formatter; `TitleAveragesChart` delegates
+- [x] Phase D — `apiFetchWithMeta`, `employeesApi.list → {rows,total}`, `<Pagination>` accepts `total` and renders "Showing X–Y of N"
+- [x] Phase E — shadcn `Popover` + `Command` primitives, `GET /employees/countries`, generic `Combobox` + `CountryCombobox` wired into Employees and Insights pages
+- [x] Phase F — `CompensationAnalysisService` (window function), `GET /employees/compensation-analysis`, `CompaRatioBadge` + `RangePenetrationBar` columns
+- [x] Phase G — payroll burden service + `/insights/payroll/by-country|by-title` + `PayrollBreakdown` section
+- [x] Phase H — NTILE(20) `salary_outliers`, `/insights/outliers`, bottom/top `OutlierTables`
+- [x] Phase I — `artifacts/tradeoffs.md` (5 new entries), `tasks/manual-test-scenarios.md` (7 new), `README` API table, `tasks/lessons.md`
+- **Status**: done
+- **Summary**: 47 commits across 9 phases, all `test:` → `feat:`/`refactor:` cadence. Backend grew from 100 to 127 passing tests; frontend from 50 to 71. Two new deps (`cmdk`, `@radix-ui/react-popover`) and one new vitest polyfill block.
+
 ### 2026-05-20 — Structured JSON logging across backend and frontend
 - [x] `app/core/logging.py` — `JsonFormatter`, `request_id_var`, idempotent `configure_logging(level, sql_echo)`
 - [x] `Settings.log_level` / `Settings.log_sql` (env-driven) and lifespan wiring

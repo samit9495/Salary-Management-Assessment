@@ -94,6 +94,41 @@ single in-memory database. Pattern:
 poolclass=StaticPool, future=True)`. Promote to `.cursor/rules/` if it bites
 again.
 
+### 2026-05-20 — Method shadows builtin in class-body annotations
+**Context**: Phase E.2 — adding `distinct_countries(...) -> list[tuple[str, int]]`
+to `EmployeeRepository` after the existing `list(...) -> list[Employee]`.
+**Issue**: Class body raised `TypeError: 'function' object is not subscriptable`
+on the new annotation. Python evaluates annotations at class-definition
+time; by the time `distinct_countries` is being defined, `list` in the
+class scope already resolves to the prior `def list(...)` method.
+**Fix/Insight**: Add `from __future__ import annotations` so all
+annotations are deferred (PEP 563-style). Cheap, universal, and avoids
+the temptation to use `typing.List` for one method while leaving the
+others on PEP 585.
+
+### 2026-05-20 — cmdk/Radix need a one-time jsdom polyfill bundle
+**Context**: Phase E.6 — first vitest run after introducing the
+`Combobox` based on `cmdk` + `@radix-ui/react-popover`.
+**Issue**: Tests crashed with `ReferenceError: ResizeObserver is not
+defined`. Even after adding it, Radix Popover triggers blew up because
+`Element.prototype.hasPointerCapture` and `scrollIntoView` are also
+missing from jsdom.
+**Fix/Insight**: Add a small polyfill block to `src/test/setup.ts`
+covering `ResizeObserver`, `scrollIntoView`, and the three pointer-capture
+methods. One-time cost; never touched again. Any future component that
+needs more polyfills should extend the same block, not bury polyfills
+in individual tests.
+
+### 2026-05-20 — Order-sensitive FastAPI routes: `/employees/countries` vs `/employees/{int}`
+**Context**: Phase E.2 — adding `GET /employees/countries`.
+**Issue**: With `/employees/{employee_id}` (validated as `int`) registered
+first, requests to `/employees/countries` returned 422 because FastAPI
+matched the int route and tried to coerce "countries" into an int.
+**Fix/Insight**: For static literal paths that overlap with a path-param
+route, register the literal **before** the param route. Easy to miss
+because `/employees/countries` *also* doesn't appear in any test until
+you add one.
+
 ## Entry template
 
 ```

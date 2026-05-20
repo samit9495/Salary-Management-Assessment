@@ -126,3 +126,107 @@ returns 10000.
 **Expected Result**: Previous disabled at offset 0; Next disabled when
 returned rows < limit.
 **Verification**: visual + DOM `disabled` attribute on both buttons.
+
+## 2026-05-20 — main — Bug fixes & advanced HR analytics
+
+### Scenario: Job title case variants collapse in aggregations
+**Area**: Insights API + page
+**Type**: data integrity
+**Preconditions**: at least 3 employees with `job_title` set to "Engineer",
+"engineer", and "ENGINEER" in the same country.
+**Steps**:
+1. `GET /insights/by-country/IN/by-title`.
+2. Open `/insights`, pick the same country.
+**Expected Result**: API returns a single `"Engineer"` key whose average
+includes all three salaries; the chart shows one bar.
+**Verification**: SQL `SELECT lower(job_title), count(*) FROM employees
+WHERE country='IN' GROUP BY 1` returns 1 row for the variants.
+
+### Scenario: Country path is case-insensitive on Insights
+**Area**: Insights API
+**Type**: functional
+**Preconditions**: at least one employee with country "IN".
+**Steps**:
+1. `GET /insights/by-country/in`.
+2. `GET /insights/by-country/IN`.
+**Expected Result**: identical JSON bodies; both have `"country": "IN"`.
+**Verification**: shell diff between the two responses is empty.
+
+### Scenario: Insights chart Y-axis labels are fully visible
+**Area**: Insights page (`SalaryBarChart`)
+**Type**: visual / regression
+**Preconditions**: any country with at least one job title whose average
+is ≥ 100,000.
+**Steps**:
+1. Open `/insights`, choose that country.
+2. Inspect the "Average salary by job title" chart.
+**Expected Result**: Y-axis labels render in compact form (e.g. `100K`,
+`1.2M`) without clipping; the leftmost bar does not graze the axis.
+**Verification**: visually inspect at 1280px viewport and 768px viewport.
+
+### Scenario: Pagination summary shows total after filtering
+**Area**: Employees page
+**Type**: functional
+**Preconditions**: more than 25 employees in the DB.
+**Steps**:
+1. Open `/employees` with no filters; observe summary text.
+2. Apply a country filter that matches > 25 rows.
+3. Apply a country filter that matches 0 rows.
+**Expected Result**: 1) "Showing 1–25 of N" where N is total.
+2) summary updates to "Showing 1–25 of M". 3) summary reads
+"Showing 0–0 of 0".
+**Verification**: `X-Total-Count` header in DevTools matches the
+displayed total.
+
+### Scenario: Country combobox options react to active search
+**Area**: Employees page filters + `GET /employees/countries`
+**Type**: functional
+**Preconditions**: employees in IN, US, and DE.
+**Steps**:
+1. Open `/employees`.
+2. Click the Country combobox — observe IN, US, DE listed.
+3. Type a name fragment in the Search field that only matches IN rows.
+4. Re-open the combobox.
+**Expected Result**: combobox now lists only IN (with its count).
+**Verification**: Network panel shows
+`GET /employees/countries?q=<fragment>` returning `[{code:"IN", count:N}]`.
+
+### Scenario: Compa-Ratio badges colour correctly
+**Area**: Employees page + `/employees/compensation-analysis`
+**Type**: functional
+**Preconditions**: at least 3 employees with the same country + title
+and salaries 80, 100, 120 in their currency units.
+**Steps**:
+1. Open `/employees`.
+2. Locate the three peers (filter by their country if needed).
+**Expected Result**: the 80-salary peer shows a red "80%" badge
+(underpaid bucket); the 100-salary shows a green "100%" badge; the
+120-salary shows an amber "120%" badge.
+**Verification**: hover each badge — the tooltip explains the bucket;
+screen-reader reads "Compa-ratio 80%, Underpaid".
+
+### Scenario: Payroll burden totals add up to 100%
+**Area**: Insights page payroll sections
+**Type**: data integrity
+**Preconditions**: any seeded DB.
+**Steps**:
+1. Open `/insights`.
+2. Read the per-entry percentages in the "By country" list.
+**Expected Result**: percentages sum to 100.00 ± 0.01 (rounding).
+**Verification**: shell:
+`curl -s :8000/insights/payroll/by-country | jq '.entries | map(.percentage|tonumber) | add'`.
+
+### Scenario: Outlier tables flag the right peers
+**Area**: Insights page outliers + `/insights/outliers`
+**Type**: functional + edge case
+**Preconditions**: seed with at least 20 Engineers in one country (e.g.
+`--count 10000 --seed 42 --reset`).
+**Steps**:
+1. Open `/insights`.
+2. Read the "Bottom 5%" table.
+3. Read the "Top 5%" table.
+**Expected Result**: each lists 10 names; their salaries are at the
+extremes of their peer group; no one shows up in both. Peer groups
+smaller than 5 are silently skipped (no false positives).
+**Verification**: `curl -s ':8000/insights/outliers?bucket=top'` includes
+only rows whose `bucket = 20`.
