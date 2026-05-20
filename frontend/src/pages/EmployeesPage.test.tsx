@@ -3,6 +3,7 @@ import { render, screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import { TooltipProvider } from "@/components/ui/tooltip";
 import { EmployeesPage } from "@/pages/EmployeesPage";
 import { employeesApi } from "@/services/employees";
 import type { Employee } from "@/services/types";
@@ -34,7 +35,9 @@ function renderPage() {
   });
   return render(
     <QueryClientProvider client={queryClient}>
-      <EmployeesPage />
+      <TooltipProvider delayDuration={0}>
+        <EmployeesPage />
+      </TooltipProvider>
     </QueryClientProvider>,
   );
 }
@@ -106,6 +109,35 @@ describe("EmployeesPage", () => {
 
     expect(await screen.findByText("75%")).toBeInTheDocument();
     expect(screen.getByText("130%")).toBeInTheDocument();
+  });
+
+  it("shows info tooltips beside the Compa and Spread column headers", async () => {
+    apiMock.list.mockResolvedValue({
+      rows: [employee(1, "Jane Doe")],
+      total: 1,
+    });
+    apiMock.compensationAnalysis.mockResolvedValue({
+      analyses: [
+        {
+          id: 1,
+          peer_avg: "100.00",
+          peer_min: "50.00",
+          peer_max: "150.00",
+          compa_ratio: "1.0000",
+          range_penetration: "0.5000",
+        },
+      ],
+    });
+
+    renderPage();
+
+    await screen.findByText("Jane Doe");
+    expect(
+      await screen.findByRole("button", { name: /^compa$/i }),
+    ).toBeInTheDocument();
+    expect(
+      await screen.findByRole("button", { name: /^spread$/i }),
+    ).toBeInTheDocument();
   });
 
   it("renders the 'of N' pagination summary using the API total", async () => {
