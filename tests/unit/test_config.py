@@ -24,6 +24,25 @@ def test_settings_parses_comma_separated_allowed_origins(monkeypatch) -> None:
     ]
 
 
+def test_settings_parses_json_array_allowed_origins(monkeypatch) -> None:
+    """Locks the BeforeValidator passthrough that defers JSON parsing.
+
+    When ``ALLOWED_ORIGINS`` is a JSON array string (leading ``[``),
+    ``_parse_origins`` must return the value unchanged so
+    ``pydantic-settings`` can JSON-decode it. Without this branch the
+    list would be one-elemented with the raw JSON string inside.
+    """
+    monkeypatch.setenv(
+        "ALLOWED_ORIGINS",
+        '["https://a.example.com", "https://b.example.com"]',
+    )
+    settings = Settings()
+    assert settings.allowed_origins == [
+        "https://a.example.com",
+        "https://b.example.com",
+    ]
+
+
 def test_settings_defaults_log_level_to_info(monkeypatch) -> None:
     monkeypatch.delenv("LOG_LEVEL", raising=False)
     settings = Settings()
