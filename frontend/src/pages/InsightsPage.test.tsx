@@ -1,5 +1,5 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { render, screen } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -128,6 +128,34 @@ describe("InsightsPage", () => {
     expect(
       await screen.findByRole("img", { name: /by country/i }),
     ).toBeInTheDocument();
+  });
+
+  it("renders the payroll entries as a bordered SummaryList with per-row total and percentage", async () => {
+    apiMock.byCountry.mockResolvedValue({
+      country: "IN",
+      average_salary: "100000.00",
+      min_salary: "30000.00",
+      max_salary: "250000.00",
+      employee_count: 1,
+    });
+    apiMock.byCountryAndTitle.mockResolvedValue({ country: "IN", averages: {} });
+    apiMock.payrollByCountry.mockResolvedValue({
+      total: "1000.00",
+      entries: [
+        { key: "IN", total: "700.00", percentage: "70.00" },
+        { key: "US", total: "300.00", percentage: "30.00" },
+      ],
+    });
+    apiMock.payrollByTitle.mockResolvedValue({ total: "0.00", entries: [] });
+
+    renderPage();
+
+    const list = await screen.findByRole("list", { name: /by country breakdown/i });
+    const rows = within(list).getAllByRole("listitem");
+    expect(rows).toHaveLength(2);
+    expect(within(rows[0]!).getByText("IN")).toBeInTheDocument();
+    expect(within(rows[0]!).getByText("700")).toBeInTheDocument();
+    expect(within(rows[0]!).getByText("70.00%")).toBeInTheDocument();
   });
 
   it("exposes info tooltips beside the advanced analytics sections", async () => {
