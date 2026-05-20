@@ -1,3 +1,6 @@
+from pathlib import Path
+
+import pytest
 from sqlalchemy import delete, func, select
 from sqlalchemy.orm import Session
 
@@ -33,3 +36,12 @@ class TestSeedRun:
         seed_run(db, count=3, rng_seed=1, reset=True)
         total = db.execute(select(func.count(Employee.id))).scalar_one()
         assert total == 3
+
+    def test_run_raises_runtime_error_when_name_files_are_empty(
+        self, db: Session, tmp_path: Path
+    ) -> None:
+        (tmp_path / "first_names.txt").write_text("", encoding="utf-8")
+        (tmp_path / "last_names.txt").write_text("", encoding="utf-8")
+
+        with pytest.raises(RuntimeError, match="name lists are empty"):
+            seed_run(db, count=10, rng_seed=1, data_dir=tmp_path)
