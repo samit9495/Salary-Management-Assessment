@@ -25,14 +25,15 @@ def by_country(
     country: CountryCode,
     db: Session = Depends(get_db),
 ) -> CountryInsights:
+    canonical = country.upper()
     service = SalaryInsightsService(db)
-    minimum, maximum = service.min_max_salary_by_country(country)
+    minimum, maximum = service.min_max_salary_by_country(canonical)
     return CountryInsights(
-        country=country,
-        average_salary=service.average_salary_by_country(country),
+        country=canonical,
+        average_salary=service.average_salary_by_country(canonical),
         min_salary=minimum,
         max_salary=maximum,
-        employee_count=service.employee_count_by_country(country),
+        employee_count=service.employee_count_by_country(canonical),
     )
 
 
@@ -41,10 +42,11 @@ def by_country_and_title(
     country: CountryCode,
     db: Session = Depends(get_db),
 ) -> CountryTitleAverages:
+    canonical = country.upper()
     service = SalaryInsightsService(db)
     return CountryTitleAverages(
-        country=country,
-        averages=service.average_salary_by_country_and_title(country),
+        country=canonical,
+        averages=service.average_salary_by_country_and_title(canonical),
     )
 
 

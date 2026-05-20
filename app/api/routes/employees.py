@@ -30,9 +30,14 @@ def list_employees(
     offset: Annotated[int, Query(ge=0)] = 0,
     db: Session = Depends(get_db),
 ) -> list[EmployeeRead]:
+    canonical_country = country.upper() if country else None
     service = EmployeeService(db)
-    employees = service.list(country=country, q=q, sort=sort, limit=limit, offset=offset)
-    response.headers["X-Total-Count"] = str(service.count(country=country, q=q))
+    employees = service.list(
+        country=canonical_country, q=q, sort=sort, limit=limit, offset=offset
+    )
+    response.headers["X-Total-Count"] = str(
+        service.count(country=canonical_country, q=q)
+    )
     return [EmployeeRead.model_validate(e) for e in employees]
 
 
